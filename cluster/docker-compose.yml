@@ -1,0 +1,45 @@
+rabbit1:
+  image: bijukunjummen/rabbitmq-server
+  hostname: rabbit1
+  labels:
+    io.rancher.scheduler.affinity:container_label_ne: io.rancher.stack_service.name=${stack_name}/rabbit2 
+  ports:
+    - 5672
+    - 15672
+
+rabbit2:
+  image: bijukunjummen/rabbitmq-server
+  hostname: rabbit2
+  labels:
+    io.rancher.scheduler.affinity:container_label_ne: io.rancher.stack_service.name=${stack_name}/rabbit1
+  links:
+    - rabbit1
+  environment:
+   - CLUSTERED=true
+   - CLUSTER_WITH=rabbit1
+   - RAM_NODE=true
+  ports:
+    - 5672
+    - 15672
+
+lb1:
+  image: rancher/load-balancer-service
+  ports:
+    - 5672/tcp
+  links:
+    - rabbit1
+
+lb2:
+  image: rancher/load-balancer-service
+  ports:
+    - 5672/tcp
+  links:
+    - rabbit2
+
+lb3-ui:
+  image: rancher/load-balancer-service
+  ports:
+    - 8080:15672
+  links:
+    - rabbit1
+    - rabbit2
